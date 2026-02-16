@@ -711,32 +711,72 @@
             alert(`Сохранено ${markers.length} маркеров в localStorage`);
         }
 
-        function loadMarkers() {
-            fetch(CONFIG.markersFile)
-                .then(response => response.ok ? response.json() : Promise.reject())
-                .then(data => {
-                    data.forEach(markerData => addMarker(
-                        { theta: markerData.theta, phi: markerData.phi }, markerData.text, markerData.id,
-                        markerData.fontSize || 14, markerData.fontFamily || 'Arial, sans-serif',
-                        markerData.fontWeight || 'normal', markerData.fontStyle || 'normal', markerData.url || ''
-                    ));
-                    updateMarkerCount();
-                })
-                .catch(() => {
-                    const saved = localStorage.getItem(CONFIG.storageKey);
-                    if (saved) {
-                        try {
-                            const data = JSON.parse(saved);
-                            data.forEach(markerData => addMarker(
-                                { theta: markerData.theta, phi: markerData.phi }, markerData.text, markerData.id,
-                                markerData.fontSize || 14, markerData.fontFamily || 'Arial, sans-serif',
-                                markerData.fontWeight || 'normal', markerData.fontStyle || 'normal', markerData.url || ''
-                            ));
-                            updateMarkerCount();
-                        } catch(e) { console.error('Ошибка загрузки из localStorage:', e); }
-                    }
-                });
+function loadMarkers() {
+  // Пытаемся загрузить markers.json
+  fetch(CONFIG.markersFile)
+    .then(response => {
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return response.json();
+    })
+    .then(data => {
+      // Если в файле есть объект с маркерами и/или видом
+      let markersData = [];
+      let viewData = null;
+
+      if (Array.isArray(data)) {
+        // Простой массив маркеров
+        markersData = data;
+      } else if (data && typeof data === 'object') {
+        // Расширенный формат: { markers: [...], view: {...} }
+        if (Array.isArray(data.markers)) markersData = data.markers;
+        if (data.view && typeof data.view.x === 'number' && typeof data.view.y === 'number') {
+          viewData = data.view;
         }
+      }
+
+      // Удаляем старые маркеры (если есть)
+      markers.forEach(m => {
+        if (m.mesh) scene.remove(m.mesh);
+        if (m.label.parentNode) markerContainer.removeChild(m.label);
+      });
+      markers = [];
+
+      // Добавляем новые маркеры из файла
+      markersData.forEach(markerData => {
+        addMarker(
+          { theta: markerData.theta, phi: markerData.phi },
+          markerData.text,
+          markerData.id,
+          markerData.fontSize || 14,
+          markerData.fontFamily || 'Arial, sans-serif',
+          markerData.fontWeight || 'normal',
+          markerData.fontStyle || 'normal',
+          markerData.url || ''
+        );
+      });
+
+      // Если в файле был view – применяем его и сохраняем в localStorage как начальный
+      if (viewData) {
+        sphereRotation.x = viewData.x;
+        sphereRotation.y = viewData.y;
+        sphereRotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, sphereRotation.x));
+        if (sphere) {
+          sphere.rotation.y = sphereRotation.y;
+          sphere.rotation.x = sphereRotation.x;
+        }
+        localStorage.setItem(CONFIG.viewStorageKey, JSON.stringify(viewData));
+        console.log('Восстановлен вид из markers.json');
+      }
+
+      updateMarkerCount();
+      console.log(`Загружено ${markers.length} маркеров из ${CONFIG.markersFile}`);
+    })
+    .catch(error => {
+      console.error('Не удалось загрузить markers.json:', error);
+      // Здесь можно показать всплывающее сообщение, но не загружаем из localStorage
+      alert('Не удалось загрузить маркеры из файла. Проверьте наличие markers.json в корне репозитория.');
+    });
+}
 
         function clearMarkers() {
             if (confirm('Удалить все маркеры?')) {
