@@ -1,0 +1,68 @@
+{
+  "markers": [
+    {
+      "id": "1770894197503",
+      "theta": 1.3447506721430236,
+      "phi": 1.9764045029296096,
+      "text": "Ресторан \"У водохранилища\"",
+      "fontSize": 12,
+      "fontFamily": "Arial, sans-serif",
+      "fontWeight": "normal",
+      "fontStyle": "normal",
+      "url": "",
+      "date": "2026-02-12T11:05:42.290Z"
+    },
+    {
+      "id": "1770894212287",
+      "theta": -1.0690437263836292,
+      "phi": 1.906174837232689,
+      "text": "Спортивная площадка",
+      "fontSize": 12,
+      "fontFamily": "Arial, sans-serif",
+      "fontWeight": "normal",
+      "fontStyle": "normal",
+      "url": "",
+      "date": "2026-02-12T11:05:42.290Z"
+    },
+    {
+      "id": "1770894242538",
+      "theta": 1.0334186010874729,
+      "phi": 1.810425020423498,
+      "text": "Террасный парк",
+      "fontSize": 14,
+      "fontFamily": "Arial, sans-serif",
+      "fontWeight": "bold",
+      "fontStyle": "normal",
+      "url": "https://crytekruz.github.io/pano3",
+      "date": "2026-02-12T11:05:42.290Z"
+    },
+    {
+      "id": "1770894255818",
+      "theta": 0.00459896221032561,
+      "phi": 1.6303760831180096,
+      "text": "Лесопарк",
+      "fontSize": 14,
+      "fontFamily": "Arial, sans-serif",
+      "fontWeight": "bold",
+      "fontStyle": "normal",
+      "url": "https://crytekruz.github.io/pano5",
+      "date": "2026-02-12T11:05:42.290Z"
+    },
+    {
+      "id": "1770894269907",
+      "theta": 0.46466357382524215,
+      "phi": 1.6386383075693438,
+      "text": "Общественно-деловой центр",
+      "fontSize": 14,
+      "fontFamily": "Arial, sans-serif",
+      "fontWeight": "bold",
+      "fontStyle": "normal",
+      "url": "https://crytekruz.github.io/pano2",
+      "date": "2026-02-12T11:05:42.290Z"
+    }
+  ],
+  "view": {
+    "x": 0.9142686828035496,
+    "y": 12.631095219632416
+  }
+}

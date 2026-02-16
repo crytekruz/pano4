@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Пляж</title>
+    <style>
+        body { margin: 0; overflow: hidden; font-family: Arial, sans-serif; }
+        #info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            z-index: 100;
+            font-size: 12px;
+            max-width: 320px;
+        }
+        /* Заголовок панорамы — только текст с радиальной тенью, без фона */
+        #panorama-title {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 0 0 15px rgba(0,0,0,0.9), 0 0 30px rgba(0,0,0,0.7), 0 0 45px rgba(0,0,0,0.5);
+            z-index: 200;
+            white-space: nowrap;
+            pointer-events: none;
+            /* background и padding удалены — чёрной рамки больше нет */
+        }
+        .marker-label {
+            position: absolute;
+            background: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+            max-width: 250px;
+            word-wrap: break-word;
+            pointer-events: auto !important;
+            transform: translate(-50%, -100%);
+            color: #333;
+            border: 1px solid #f0f0f0;
+            font-size: 14px;
+            font-family: 'Arial', sans-serif;
+            cursor: pointer;
+            z-index: 101;
+            opacity: 0.7;
+            transition: opacity 0.3s ease, background 0.3s ease;
+            text-decoration: none;
+            display: block;
+        }
+        a.marker-label:link,
+        a.marker-label:visited {
+            color: #333;
+            text-decoration: none;
+        }
+        a.marker-label:hover {
+            background: white;
+            opacity: 1;
+            text-decoration: underline;
+        }
+        .marker-label:hover {
+            background: white;
+            box-shadow: 0 3px 15px rgba(0,0,0,0.3);
+            opacity: 1;
+        }
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            padding: 15px;
+            border-radius: 10px;
+            color: white;
+            z-index: 100;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 5px;
+            max-width: 90%;
+        }
+        button {
+            margin: 0 2px;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            background: #4CAF50;
+            color: white;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+        button:hover { background: #45a049; }
+        button.delete { background: #f44336; }
+        button.delete:hover { background: #d32f2f; }
+        button.secondary { background: #2196F3; }
+        button.secondary:hover { background: #1976D2; }
+        #upload-panel {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.9);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            z-index: 101;
+            text-align: center;
+            min-width: 300px;
+        }
+        #upload-panel h2 { margin-top: 0; }
+        #file-input {
+            padding: 10px;
+            background: white;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+        .hidden { display: none !important; }
+        
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        #font-dialog {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+            z-index: 102;
+            min-width: 340px;
+        }
+        #font-dialog h3 {
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+        .dialog-row {
+            margin: 10px 0;
+        }
+        .dialog-row label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .dialog-row select,
+        .dialog-row input[type="text"],
+        .dialog-row input[type="url"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        .checkbox-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 10px;
+        }
+        .checkbox-group label {
+            display: flex;
+            align-items: center;
+            font-weight: normal;
+            cursor: pointer;
+        }
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+            margin-right: 5px;
+        }
+        .dialog-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .dialog-buttons button {
+            padding: 8px 15px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Заголовок панорамы (скрыт до загрузки) -->
+    <div id="panorama-title" class="hidden">Общественно-деловой центр</div>
+
+    <div id="info" class="hidden">
+        <strong>Управление:</strong><br>
+        • ЛКМ + двигать мышь — вращать<br>
+        • Колёсико мыши — зум<br>
+        • Двойной клик — добавить маркер (с URL и шрифтом)<br>
+        • ПКМ по маркеру — удалить<br>
+        • 📌 Запомнить вид — сохранить текущий поворот в браузере<br>
+        • ↺ Сбросить вид — вернуться в центр<br>
+        • 💾 Сохранить — записать маркеры в localStorage<br>
+        • 📥 Экспорт JSON — сохраняет маркеры + текущий вид в файл<br>
+        • 📤 Импорт JSON — загружает маркеры и (если есть) вид из файла
+    </div>
+    
+    <div id="controls" class="hidden">
+        <span>Маркеров: <span id="marker-count">0</span></span>
+        <button onclick="saveMarkers()">💾 Сохранить</button>
+        <button onclick="clearMarkers()" class="delete">🗑️ Очистить все</button>
+        <button onclick="exportMarkers()">📥 Экспорт JSON</button>
+        <button onclick="importMarkers()">📤 Импорт JSON</button>
+        <!-- Кнопки для работы с видом -->
+        <button onclick="saveCurrentView()" class="secondary" title="Сохранить текущий вид в localStorage">📌 Запомнить вид</button>
+        <button onclick="resetView()" class="secondary" title="Вернуться в центр">↺ Сбросить вид</button>
+        <!-- Скрытые кнопки экспорта/импорта вида (оставлены в коде, но не отображаются) -->
+        <button onclick="exportView()" class="secondary hidden" title="Экспорт вида в файл">📤 Экспорт вида</button>
+        <button onclick="importView()" class="secondary hidden" title="Импорт вида из файла">📥 Импорт вида</button>
+    </div>
+
+    <!-- Диалог настроек шрифта и гиперссылки -->
+    <div id="font-dialog" class="hidden">
+        <h3>Настройки метки</h3>
+        <div class="dialog-row">
+            <label>Размер шрифта:</label>
+            <input type="range" id="dialog-font-size" min="10" max="24" value="14" step="1">
+            <span id="dialog-font-size-value">14px</span>
+        </div>
+        <div class="dialog-row">
+            <label>Шрифт:</label>
+            <select id="dialog-font-family">
+                <option value="Arial, sans-serif">Arial</option>
+                <option value="'Times New Roman', serif">Times New Roman</option>
+                <option value="'Courier New', monospace">Courier New</option>
+                <option value="Verdana, sans-serif">Verdana</option>
+                <option value="Georgia, serif">Georgia</option>
+            </select>
+        </div>
+        <div class="dialog-row">
+            <label>Начертание:</label>
+            <div class="checkbox-group">
+                <label>
+                    <input type="checkbox" id="dialog-font-bold"> Жирный
+                </label>
+                <label>
+                    <input type="checkbox" id="dialog-font-italic"> Курсив
+                </label>
+            </div>
+        </div>
+        <div class="dialog-row">
+            <label>Гиперссылка (необязательно):</label>
+            <input type="url" id="dialog-url" placeholder="https://example.com">
+        </div>
+        <div class="dialog-buttons">
+            <button onclick="cancelFontDialog()" class="delete">Отмена</button>
+            <button onclick="applyFontSettings()">Применить</button>
+        </div>
+    </div>
+
+    <div id="upload-panel">
+        <div id="loading-indicator" class="hidden">
+            <h2>Загрузка панорамы...</h2>
+            <div class="loader"></div>
+            <p>Пожалуйста, подождите</p>
+        </div>
+        <div id="manual-upload">
+            <h2>Загрузите панораму 360°</h2>
+            <p>Выберите файл панорамы (JPG или PNG):</p>
+            <input type="file" id="file-input" accept=".jpg,.jpeg,.png,.bmp">
+            <p style="font-size: 12px; color: #ccc; margin-top: 20px;">
+                Поддерживается локальная загрузка, CORS не требуется
+            </p>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // ========== КОНФИГУРАЦИЯ ==========
+        const CONFIG = {
+            markersFile: 'markers.json',
+            storageKey: 'panorama-markers',
+            viewStorageKey: 'panorama-initial-view',
+            sphereRadius: 500,
+            markerColor: 0xff0000,
+            markerSize: 5.0,
+            showMarkerDots: false
+        };
+
+        // ========== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ==========
+        let scene, camera, renderer, sphere;
+        let markers = [];
+        let markerContainer;
+        
+        let isDragging = false;
+        let previousMousePosition = { x: 0, y: 0 };
+        const rotationSpeed = 0.005;
+        
+        let sphereRotation = { x: 0, y: 0 };
+        
+        let velocity = { x: 0, y: 0 };
+        let friction = 0.8;
+        let isInertia = false;
+        
+        let fov = 75;
+        let minFov = 10;
+        let maxFov = 120;
+        let targetFov = fov;
+        let zoomVelocity = 0;
+        let zoomFriction = 0.8;
+        
+        let fontDialogCallback = null;
+        let pendingMarkerCoords = null;
+        let pendingMarkerText = '';
+
+        // ========== ИНИЦИАЛИЗАЦИЯ THREE.JS ==========
+        function initThreeJS() {
+            scene = new THREE.Scene();
+            
+            camera = new THREE.PerspectiveCamera(fov, window.innerWidth / window.innerHeight, 0.1, 3000);
+            camera.position.set(0, 0, 0);
+            
+            renderer = new THREE.WebGLRenderer({ 
+                antialias: true,
+                preserveDrawingBuffer: true
+            });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+            
+            markerContainer = document.createElement('div');
+            markerContainer.id = 'marker-container';
+            document.body.appendChild(markerContainer);
+        }
+
+        // ========== СОЗДАНИЕ ТЕКСТУРЫ ==========
+        function createTextureFromImage(img) {
+            const texture = new THREE.Texture();
+            texture.image = img;
+            texture.format = THREE.RGBAFormat;
+            texture.generateMipmaps = false;
+            texture.minFilter = THREE.LinearFilter;
+            texture.magFilter = THREE.LinearFilter;
+    
+            texture.wrapS = THREE.RepeatWrapping;
+            texture.repeat.x = -1;
+            texture.offset.x = 1;
+            texture.needsUpdate = true;
+    
+            return texture;
+        }
+
+        // ========== ПОКАЗ ЗАГОЛОВКА ПАНОРАМЫ ==========
+        function showPanoramaTitle() {
+            const titleEl = document.getElementById('panorama-title');
+            titleEl.textContent = document.title;
+            titleEl.classList.remove('hidden');
+        }
+
+        // ========== АВТОМАТИЧЕСКАЯ ЗАГРУЗКА ПАНОРАМЫ ==========
+        function tryLoadPanorama() {
+            return new Promise((resolve, reject) => {
+                document.getElementById('loading-indicator').classList.remove('hidden');
+                document.getElementById('manual-upload').classList.add('hidden');
+                
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.onload = function() {
+                    console.log('Панорама panorama.jpg найдена');
+                    const texture = createTextureFromImage(img);
+                    const geometry = new THREE.SphereGeometry(CONFIG.sphereRadius, 60, 40);
+                    const material = new THREE.MeshBasicMaterial({ map: texture, side: THREE.BackSide });
+                    sphere = new THREE.Mesh(geometry, material);
+                    scene.add(sphere);
+                    
+                    document.getElementById('upload-panel').classList.add('hidden');
+                    document.getElementById('info').classList.remove('hidden');
+                    document.getElementById('controls').classList.remove('hidden');
+                    showPanoramaTitle();
+                    resolve(texture);
+                };
+                img.onerror = function() {
+                    console.log('Панорама не найдена, показываем панель загрузки');
+                    document.getElementById('loading-indicator').classList.add('hidden');
+                    document.getElementById('manual-upload').classList.remove('hidden');
+                    reject(new Error('Панорама не найдена'));
+                };
+                img.src = 'panorama.jpg?' + new Date().getTime();
+            });
+        }
+
+        // ========== ЗАГРУЗКА ПАНОРАМЫ ИЗ ФАЙЛА ==========
+        function loadPanoramaFromFile(file) {
+            return new Promise((resolve, reject) => {
+                document.getElementById('loading-indicator').classList.remove('hidden');
+                document.getElementById('manual-upload').classList.add('hidden');
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const img = new Image();
+                    img.onload = function() {
+                        const texture = createTextureFromImage(img);
+                        const geometry = new THREE.SphereGeometry(CONFIG.sphereRadius, 60, 40);
+                        const material = new THREE.MeshBasicMaterial({ map: texture, side: THREE.BackSide });
+                        sphere = new THREE.Mesh(geometry, material);
+                        scene.add(sphere);
+                        
+                        document.getElementById('upload-panel').classList.add('hidden');
+                        document.getElementById('info').classList.remove('hidden');
+                        document.getElementById('controls').classList.remove('hidden');
+                        showPanoramaTitle();
+                        resolve(texture);
+                    };
+                    img.onerror = () => reject(new Error('Ошибка загрузки изображения'));
+                    img.src = event.target.result;
+                };
+                reader.onerror = () => reject(new Error('Ошибка чтения файла'));
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // ========== УПРАВЛЕНИЕ КАМЕРОЙ ==========
+        function initControls() {
+            renderer.domElement.addEventListener('mousedown', (e) => {
+                if (e.button === 0) {
+                    isDragging = true;
+                    isInertia = false;
+                    velocity = { x: 0, y: 0 };
+                    previousMousePosition = { x: e.clientX, y: e.clientY };
+                    e.preventDefault();
+                }
+            });
+            renderer.domElement.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                const deltaX = e.clientX - previousMousePosition.x;
+                const deltaY = e.clientY - previousMousePosition.y;
+                velocity.x = deltaX * rotationSpeed * 0.5;
+                velocity.y = deltaY * rotationSpeed * 0.5;
+                sphereRotation.y += deltaX * rotationSpeed;
+                sphereRotation.x += deltaY * rotationSpeed;
+                sphereRotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, sphereRotation.x));
+                if (sphere) {
+                    sphere.rotation.y = sphereRotation.y;
+                    sphere.rotation.x = sphereRotation.x;
+                }
+                previousMousePosition = { x: e.clientX, y: e.clientY };
+            });
+            document.addEventListener('mouseup', (e) => {
+                if (e.button === 0) {
+                    isDragging = false;
+                    isInertia = true;
+                }
+            });
+            renderer.domElement.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                const zoomStep = 10;
+                if (e.deltaY < 0) targetFov = Math.max(minFov, fov - zoomStep);
+                else targetFov = Math.min(maxFov, fov + zoomStep);
+                zoomVelocity = (targetFov - fov) * 0.3;
+            });
+        }
+
+        // ========== ФУНКЦИИ ДЛЯ РАБОТЫ С ВИДОМ ==========
+        function saveCurrentView() {
+            if (!sphere) { alert('Панорама ещё не загружена'); return; }
+            const viewData = { x: sphereRotation.x, y: sphereRotation.y };
+            localStorage.setItem(CONFIG.viewStorageKey, JSON.stringify(viewData));
+            alert('Текущий вид сохранён в браузере');
+        }
+
+        function loadInitialView() {
+            const saved = localStorage.getItem(CONFIG.viewStorageKey);
+            if (saved) {
+                try {
+                    const viewData = JSON.parse(saved);
+                    sphereRotation.x = viewData.x || 0;
+                    sphereRotation.y = viewData.y || 0;
+                    sphereRotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, sphereRotation.x));
+                    if (sphere) {
+                        sphere.rotation.y = sphereRotation.y;
+                        sphere.rotation.x = sphereRotation.x;
+                    }
+                    console.log('Загружен начальный вид');
+                } catch (e) { console.error('Ошибка загрузки вида:', e); }
+            }
+        }
+
+        function resetView() {
+            if (!sphere) return;
+            sphereRotation = { x: 0, y: 0 };
+            sphere.rotation.y = 0;
+            sphere.rotation.x = 0;
+            velocity = { x: 0, y: 0 };
+            isInertia = false;
+            console.log('Вид сброшен в центр');
+        }
+
+        // ========== ЭКСПОРТ / ИМПОРТ ВИДА В ФАЙЛ (скрытый функционал) ==========
+        function exportView() {
+            if (!sphere) { alert('Панорама не загружена'); return; }
+            const viewData = { x: sphereRotation.x, y: sphereRotation.y };
+            const dataStr = JSON.stringify(viewData, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'view.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function importView() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    try {
+                        const viewData = JSON.parse(event.target.result);
+                        if (typeof viewData.x === 'number' && typeof viewData.y === 'number') {
+                            sphereRotation.x = viewData.x;
+                            sphereRotation.y = viewData.y;
+                            sphereRotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, sphereRotation.x));
+                            if (sphere) {
+                                sphere.rotation.y = sphereRotation.y;
+                                sphere.rotation.x = sphereRotation.x;
+                            }
+                            localStorage.setItem(CONFIG.viewStorageKey, JSON.stringify(viewData));
+                            alert('Вид загружен из файла и сохранён как начальный');
+                        } else {
+                            alert('Неверный формат файла вида');
+                        }
+                    } catch (error) {
+                        alert('Ошибка чтения файла');
+                    }
+                };
+                reader.readAsText(file);
+            };
+            input.click();
+        }
+
+        // ========== МАРКЕРЫ ==========
+        function addMarker(coords, label = 'Новый маркер', id = Date.now().toString(), 
+                          fontSize = 14, fontFamily = 'Arial, sans-serif', 
+                          fontWeight = 'normal', fontStyle = 'normal', url = '') {
+            let markerMesh = null;
+            if (CONFIG.showMarkerDots) {
+                const geometry = new THREE.SphereGeometry(CONFIG.markerSize, 16, 16);
+                const material = new THREE.MeshBasicMaterial({ color: CONFIG.markerColor, transparent: true, opacity: 0.7 });
+                markerMesh = new THREE.Mesh(geometry, material);
+                const vector = new THREE.Vector3();
+                vector.setFromSphericalCoords(CONFIG.sphereRadius, coords.phi, coords.theta);
+                markerMesh.position.copy(vector);
+                scene.add(markerMesh);
+            }
+            
+            let labelElement;
+            if (url && url.trim() !== '') {
+                labelElement = document.createElement('a');
+                labelElement.href = url;
+                labelElement.target = '_blank';
+                labelElement.rel = 'noopener noreferrer';
+            } else {
+                labelElement = document.createElement('div');
+            }
+            labelElement.className = 'marker-label';
+            labelElement.textContent = label;
+            labelElement.dataset.markerId = id;
+            labelElement.style.fontSize = fontSize + 'px';
+            labelElement.style.fontFamily = fontFamily;
+            labelElement.style.fontWeight = fontWeight;
+            labelElement.style.fontStyle = fontStyle;
+            
+            labelElement.addEventListener('contextmenu', function(e) {
+                e.preventDefault(); e.stopPropagation();
+                if (confirm('Удалить этот маркер?')) { removeMarker(id); saveMarkers(); }
+                return false;
+            });
+            labelElement.addEventListener('mouseenter', function() {
+                this.style.background = 'white'; this.style.opacity = '1';
+                const marker = markers.find(m => m.id === id);
+                if (marker && marker.mesh && marker.mesh.material) marker.mesh.material.opacity = 1;
+            });
+            labelElement.addEventListener('mouseleave', function() {
+                this.style.background = 'white'; this.style.opacity = '0.7';
+                const marker = markers.find(m => m.id === id);
+                if (marker && marker.mesh && marker.mesh.material) marker.mesh.material.opacity = 0.7;
+            });
+            markerContainer.appendChild(labelElement);
+            
+            markers.push({
+                id, mesh: markerMesh, label: labelElement, coords, text: label,
+                fontSize, fontFamily, fontWeight, fontStyle, url,
+                date: new Date().toISOString()
+            });
+            updateMarkerCount();
+            updateMarkerLabels();
+            return id;
+        }
+
+        function removeMarker(id) {
+            const index = markers.findIndex(m => m.id === id);
+            if (index !== -1) {
+                if (markers[index].mesh) { scene.remove(markers[index].mesh); markers[index].mesh.geometry.dispose(); markers[index].mesh.material.dispose(); }
+                if (markers[index].label.parentNode) markerContainer.removeChild(markers[index].label);
+                markers.splice(index, 1);
+                updateMarkerCount();
+                return true;
+            }
+            return false;
+        }
+
+        function getSphericalCoords(event) {
+            const mouse = new THREE.Vector2();
+            const rect = renderer.domElement.getBoundingClientRect();
+            mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+            mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+            const raycaster = new THREE.Raycaster();
+            raycaster.setFromCamera(mouse, camera);
+            if (!sphere) return null;
+            const tempSphere = new THREE.Sphere(new THREE.Vector3(0,0,0), CONFIG.sphereRadius);
+            const intersection = raycaster.ray.intersectSphere(tempSphere, new THREE.Vector3());
+            if (intersection) {
+                const intersectionPoint = intersection.clone();
+                const quaternion = new THREE.Quaternion();
+                quaternion.setFromEuler(new THREE.Euler(sphereRotation.x, sphereRotation.y, 0));
+                intersectionPoint.applyQuaternion(quaternion.inverse());
+                const spherical = new THREE.Spherical();
+                spherical.setFromVector3(intersectionPoint);
+                return spherical;
+            }
+            return null;
+        }
+
+        function updateMarkerLabels() {
+            markers.forEach(marker => {
+                const position = new THREE.Vector3();
+                position.setFromSphericalCoords(CONFIG.sphereRadius, marker.coords.phi, marker.coords.theta);
+                if (marker.mesh) marker.mesh.position.copy(position);
+                const quaternion = new THREE.Quaternion();
+                quaternion.setFromEuler(new THREE.Euler(sphereRotation.x, sphereRotation.y, 0));
+                const rotatedPosition = position.clone().applyQuaternion(quaternion);
+                const vector = rotatedPosition.clone().project(camera);
+                if (vector.z < 1) {
+                    const x = (vector.x * 0.5 + 0.5) * window.innerWidth;
+                    const y = (-vector.y * 0.5 + 0.5) * window.innerHeight;
+                    marker.label.style.display = 'block';
+                    marker.label.style.left = `${x}px`;
+                    marker.label.style.top = `${y}px`;
+                } else marker.label.style.display = 'none';
+            });
+        }
+
+        function updateMarkerCount() {
+            document.getElementById('marker-count').textContent = markers.length;
+        }
+
+        // ========== ДИАЛОГ НАСТРОЕК ==========
+        function showFontDialog(text, callback, currentUrl = '') {
+            pendingMarkerText = text;
+            fontDialogCallback = callback;
+            document.getElementById('font-dialog').classList.remove('hidden');
+            const fontSizeSlider = document.getElementById('dialog-font-size');
+            const fontSizeValue = document.getElementById('dialog-font-size-value');
+            fontSizeSlider.value = '14';
+            fontSizeValue.textContent = '14px';
+            fontSizeSlider.oninput = (e) => fontSizeValue.textContent = e.target.value + 'px';
+            document.getElementById('dialog-url').value = currentUrl;
+        }
+
+        function cancelFontDialog() {
+            document.getElementById('font-dialog').classList.add('hidden');
+            fontDialogCallback = null;
+            pendingMarkerText = '';
+        }
+
+        function applyFontSettings() {
+            const fontSize = document.getElementById('dialog-font-size').value;
+            const fontFamily = document.getElementById('dialog-font-family').value;
+            const isBold = document.getElementById('dialog-font-bold').checked;
+            const isItalic = document.getElementById('dialog-font-italic').checked;
+            const url = document.getElementById('dialog-url').value.trim();
+            const fontWeight = isBold ? 'bold' : 'normal';
+            const fontStyle = isItalic ? 'italic' : 'normal';
+            document.getElementById('font-dialog').classList.add('hidden');
+            if (fontDialogCallback) {
+                fontDialogCallback(fontSize, fontFamily, fontWeight, fontStyle, url);
+                fontDialogCallback = null;
+            }
+            pendingMarkerText = '';
+        }
+
+        // ========== СОХРАНЕНИЕ / ЗАГРУЗКА МАРКЕРОВ (localStorage) ==========
+        function saveMarkers() {
+            const markersData = markers.map(m => ({
+                id: m.id, theta: m.coords.theta, phi: m.coords.phi, text: m.text,
+                fontSize: m.fontSize, fontFamily: m.fontFamily, fontWeight: m.fontWeight, fontStyle: m.fontStyle,
+                url: m.url || '', date: m.date
+            }));
+            localStorage.setItem(CONFIG.storageKey, JSON.stringify(markersData));
+            alert(`Сохранено ${markers.length} маркеров в localStorage`);
+        }
+
+        function loadMarkers() {
+            fetch(CONFIG.markersFile)
+                .then(response => response.ok ? response.json() : Promise.reject())
+                .then(data => {
+                    data.forEach(markerData => addMarker(
+                        { theta: markerData.theta, phi: markerData.phi }, markerData.text, markerData.id,
+                        markerData.fontSize || 14, markerData.fontFamily || 'Arial, sans-serif',
+                        markerData.fontWeight || 'normal', markerData.fontStyle || 'normal', markerData.url || ''
+                    ));
+                    updateMarkerCount();
+                })
+                .catch(() => {
+                    const saved = localStorage.getItem(CONFIG.storageKey);
+                    if (saved) {
+                        try {
+                            const data = JSON.parse(saved);
+                            data.forEach(markerData => addMarker(
+                                { theta: markerData.theta, phi: markerData.phi }, markerData.text, markerData.id,
+                                markerData.fontSize || 14, markerData.fontFamily || 'Arial, sans-serif',
+                                markerData.fontWeight || 'normal', markerData.fontStyle || 'normal', markerData.url || ''
+                            ));
+                            updateMarkerCount();
+                        } catch(e) { console.error('Ошибка загрузки из localStorage:', e); }
+                    }
+                });
+        }
+
+        function clearMarkers() {
+            if (confirm('Удалить все маркеры?')) {
+                markers.forEach(m => { if (m.mesh) scene.remove(m.mesh); if (m.label.parentNode) markerContainer.removeChild(m.label); });
+                markers = [];
+                localStorage.removeItem(CONFIG.storageKey);
+                updateMarkerCount();
+            }
+        }
+
+        // ========== ЭКСПОРТ / ИМПОРТ JSON (МАРКЕРЫ + ВИД) ==========
+        function exportMarkers() {
+            const markersData = markers.map(m => ({
+                id: m.id, theta: m.coords.theta, phi: m.coords.phi, text: m.text,
+                fontSize: m.fontSize, fontFamily: m.fontFamily, fontWeight: m.fontWeight, fontStyle: m.fontStyle,
+                url: m.url || '', date: m.date
+            }));
+            const exportObj = {
+                markers: markersData,
+                view: { x: sphereRotation.x, y: sphereRotation.y }
+            };
+            const dataStr = JSON.stringify(exportObj, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'markers_export.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function importMarkers() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    try {
+                        const imported = JSON.parse(event.target.result);
+                        
+                        let markersData = [];
+                        let viewData = null;
+                        
+                        if (Array.isArray(imported)) {
+                            markersData = imported;
+                        } else if (imported && typeof imported === 'object') {
+                            if (Array.isArray(imported.markers)) markersData = imported.markers;
+                            if (imported.view && typeof imported.view.x === 'number' && typeof imported.view.y === 'number') {
+                                viewData = imported.view;
+                            }
+                        }
+                        
+                        markers.forEach(m => { if (m.mesh) scene.remove(m.mesh); if (m.label.parentNode) markerContainer.removeChild(m.label); });
+                        markers = [];
+                        
+                        markersData.forEach(markerData => {
+                            addMarker(
+                                { theta: markerData.theta, phi: markerData.phi },
+                                markerData.text,
+                                markerData.id,
+                                markerData.fontSize || 14,
+                                markerData.fontFamily || 'Arial, sans-serif',
+                                markerData.fontWeight || 'normal',
+                                markerData.fontStyle || 'normal',
+                                markerData.url || ''
+                            );
+                        });
+                        
+                        if (viewData) {
+                            sphereRotation.x = viewData.x;
+                            sphereRotation.y = viewData.y;
+                            sphereRotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, sphereRotation.x));
+                            if (sphere) {
+                                sphere.rotation.y = sphereRotation.y;
+                                sphere.rotation.x = sphereRotation.x;
+                            }
+                            localStorage.setItem(CONFIG.viewStorageKey, JSON.stringify(viewData));
+                            alert(`Импортировано ${markersData.length} маркеров и вид`);
+                        } else {
+                            alert(`Импортировано ${markersData.length} маркеров`);
+                        }
+                        
+                        updateMarkerCount();
+                        saveMarkers();
+                    } catch(error) {
+                        alert('Ошибка импорта: неверный формат файла');
+                    }
+                };
+                reader.readAsText(file);
+            };
+            input.click();
+        }
+
+        // ========== ОБРАБОТЧИКИ СОБЫТИЙ ==========
+        function initEventHandlers() {
+            renderer.domElement.addEventListener('dblclick', (event) => {
+                if (!sphere) { alert('Сначала загрузите панораму!'); return; }
+                const coords = getSphericalCoords(event);
+                if (coords) {
+                    const label = prompt('Введите подпись для маркера:', 'Новый маркер');
+                    if (label && label.trim() !== '') {
+                        pendingMarkerCoords = coords;
+                        showFontDialog(label, (fontSize, fontFamily, fontWeight, fontStyle, url) => {
+                            addMarker(pendingMarkerCoords, label, undefined, 
+                                     parseInt(fontSize), fontFamily, fontWeight, fontStyle, url);
+                            saveMarkers();
+                            pendingMarkerCoords = null;
+                        }, '');
+                    }
+                }
+            });
+            renderer.domElement.addEventListener('contextmenu', (e) => e.preventDefault());
+            document.getElementById('file-input').addEventListener('change', async function(e) {
+                const file = e.target.files[0];
+                if (!file || !file.type.match('image.*')) { alert('Выберите изображение'); return; }
+                try {
+                    await loadPanoramaFromFile(file);
+                    initControls();
+                    loadMarkers();
+                    loadInitialView();
+                    animate();
+                } catch (error) {
+                    alert('Ошибка загрузки изображения');
+                    document.getElementById('loading-indicator').classList.add('hidden');
+                    document.getElementById('manual-upload').classList.remove('hidden');
+                }
+            });
+        }
+
+        // ========== АНИМАЦИЯ ==========
+        function animate() {
+            requestAnimationFrame(animate);
+            updatePhysics();
+            updateMarkerLabels();
+            renderer.render(scene, camera);
+        }
+
+        function updatePhysics() {
+            if (isInertia && !isDragging) {
+                sphereRotation.y += velocity.x;
+                sphereRotation.x += velocity.y;
+                sphereRotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, sphereRotation.x));
+                if (sphere) { sphere.rotation.y = sphereRotation.y; sphere.rotation.x = sphereRotation.x; }
+                velocity.x *= friction; velocity.y *= friction;
+                if (Math.abs(velocity.x) < 0.0001 && Math.abs(velocity.y) < 0.0001) { velocity = { x:0, y:0 }; isInertia = false; }
+            }
+            if (Math.abs(zoomVelocity) > 0.01) {
+                fov += zoomVelocity; zoomVelocity *= zoomFriction;
+                fov = Math.max(minFov, Math.min(maxFov, fov));
+                camera.fov = fov; camera.updateProjectionMatrix();
+            }
+        }
+
+        // ========== ИНИЦИАЛИЗАЦИЯ ==========
+        async function init() {
+            initThreeJS();
+            initEventHandlers();
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+            try {
+                await tryLoadPanorama();
+                initControls();
+                loadMarkers();
+                loadInitialView();
+                animate();
+            } catch (error) { console.log('Автозагрузка не удалась, ждём ручную'); }
+            
+            window.saveMarkers = saveMarkers;
+            window.clearMarkers = clearMarkers;
+            window.exportMarkers = exportMarkers;
+            window.importMarkers = importMarkers;
+            window.cancelFontDialog = cancelFontDialog;
+            window.applyFontSettings = applyFontSettings;
+            window.saveCurrentView = saveCurrentView;
+            window.resetView = resetView;
+            window.exportView = exportView;
+            window.importView = importView;
+        }
+
+        init();
+    </script>
+</body>
+</html>
