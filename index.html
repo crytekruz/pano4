@@ -2,9 +2,10 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Пляж</title>
     <style>
+        /* Базовые стили */
         body { margin: 0; overflow: hidden; font-family: Arial, sans-serif; }
         #info {
             position: absolute;
@@ -18,7 +19,6 @@
             font-size: 12px;
             max-width: 320px;
         }
-        /* Заголовок панорамы — только текст с радиальной тенью, без фона */
         #panorama-title {
             position: absolute;
             top: 20px;
@@ -31,44 +31,83 @@
             z-index: 200;
             white-space: nowrap;
             pointer-events: none;
-            /* background и padding удалены — чёрной рамки больше нет */
         }
-        .marker-label {
+
+        /* Контейнер маркера – всё позиционируется относительно него */
+        .marker-container {
             position: absolute;
-            background: white;
-            padding: 8px 15px;
-            border-radius: 20px;
-            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
-            max-width: 250px;
-            word-wrap: break-word;
-            pointer-events: auto !important;
-            transform: translate(-50%, -100%);
-            color: #333;
-            border: 1px solid #f0f0f0;
-            font-size: 14px;
-            font-family: 'Arial', sans-serif;
-            cursor: pointer;
+            left: 0;
+            top: 0;
+            pointer-events: auto;
             z-index: 101;
             opacity: 0.7;
-            transition: opacity 0.3s ease, background 0.3s ease;
-            text-decoration: none;
-            display: block;
+            transition: opacity 0.2s ease;
+            --pole-height: 25px; /* фиксированная высота древка */
         }
-        a.marker-label:link,
-        a.marker-label:visited {
-            color: #333;
-            text-decoration: none;
-        }
-        a.marker-label:hover {
-            background: white;
+        .marker-container:hover {
             opacity: 1;
+        }
+
+        /* Прямоугольник (текст) – прикреплён нижним краем к верхнему концу древка */
+        .marker-rect {
+            position: absolute;
+            left: calc(-3px);
+            bottom: calc(var(--pole-height) - 5px); /* небольшой нахлест для устранения щели */
+            
+            background: var(--marker-color, #ffffff);
+            padding: 0.4em 0.7em;
+            white-space: pre !important;
+            overflow-wrap: normal !important;
+            word-break: normal !important;
+            word-wrap: normal !important;
+            max-width: none !important;
+            width: auto !important;
+            
+            border-radius: 4px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            color: #333;
+            border: 1px solid rgba(0,0,0,0.1);
+            font-size: 14px;
+            font-family: Arial, sans-serif;
+            cursor: pointer;
+            line-height: 1.4;
+            text-align: center;
+            pointer-events: auto;
+        }
+        .marker-rect a {
+            color: inherit;
+            text-decoration: none;
+        }
+        .marker-rect a:hover {
             text-decoration: underline;
         }
-        .marker-label:hover {
-            background: white;
-            box-shadow: 0 3px 15px rgba(0,0,0,0.3);
-            opacity: 1;
+
+        /* Древко фиксированной высоты */
+        .marker-pole {
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            width: 5px;
+            height: var(--pole-height);
+            background: var(--marker-color, #ffffff);
+            border-radius: 3px;
+            transform: translateX(-50%);
+            pointer-events: none;
         }
+
+        /* Точка крепления */
+        .marker-dot {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 12px;
+            height: 12px;
+            background: var(--marker-color, #ffffff);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+
         #controls {
             position: absolute;
             bottom: 20px;
@@ -137,7 +176,8 @@
             100% { transform: rotate(360deg); }
         }
         
-        #font-dialog {
+        /* Диалог создания маркера */
+        #marker-dialog {
             position: absolute;
             top: 50%;
             left: 50%;
@@ -148,8 +188,9 @@
             box-shadow: 0 5px 20px rgba(0,0,0,0.3);
             z-index: 102;
             min-width: 340px;
+            max-width: 500px;
         }
-        #font-dialog h3 {
+        #marker-dialog h3 {
             margin-top: 0;
             margin-bottom: 15px;
         }
@@ -161,9 +202,20 @@
             margin-bottom: 5px;
             font-weight: bold;
         }
+        .dialog-row textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-sizing: border-box;
+            resize: vertical;
+            font-family: inherit;
+            font-size: 14px;
+        }
         .dialog-row select,
         .dialog-row input[type="text"],
-        .dialog-row input[type="url"] {
+        .dialog-row input[type="url"],
+        .dialog-row input[type="color"] {
             width: 100%;
             padding: 8px;
             border: 1px solid #ddd;
@@ -194,23 +246,96 @@
         .dialog-buttons button {
             padding: 8px 15px;
         }
+
+        /* Кнопка показа/скрытия интерфейса (только для ПК) */
+        #toggle-ui-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            border-radius: 30px;
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            font-size: 24px;
+            border: none;
+            cursor: pointer;
+            z-index: 300;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(5px);
+            transition: background 0.2s;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+        #toggle-ui-btn:hover {
+            background: rgba(0, 0, 0, 0.8);
+        }
+
+        /* ===== АДАПТАЦИЯ ПОД МОБИЛЬНЫЕ УСТРОЙСТВА ===== */
+        @media (max-width: 768px) {
+            #controls,
+            #info {
+                display: none !important;
+            }
+            #panorama-title {
+                font-size: 12px;
+                top: 5px;
+                white-space: normal;
+                max-width: 90%;
+                text-align: center;
+            }
+            .marker-rect {
+                padding: 0.3em 0.5em;
+                font-size: 11px;
+            }
+            .marker-pole {
+                width: 3px;
+            }
+            .marker-dot {
+                width: 8px;
+                height: 8px;
+            }
+            #marker-dialog {
+                min-width: 240px;
+                max-width: 90%;
+                padding: 10px;
+            }
+            .dialog-row textarea,
+            .dialog-row input,
+            .dialog-row select {
+                font-size: 12px;
+            }
+            /* Скрываем кнопку управления на мобильных */
+            #toggle-ui-btn {
+                display: none;
+            }
+        }
+
+        /* Для альбомной ориентации на маленьких экранах */
+        @media (orientation: landscape) and (max-height: 500px) {
+            #controls,
+            #info {
+                display: none !important;
+            }
+        }
     </style>
 </head>
 <body>
-    <!-- Заголовок панорамы (скрыт до загрузки) -->
-    <div id="panorama-title" class="hidden">Общественно-деловой центр</div>
+    <div id="panorama-title" class="hidden">Лесопарк</div>
 
     <div id="info" class="hidden">
         <strong>Управление:</strong><br>
         • ЛКМ + двигать мышь — вращать<br>
         • Колёсико мыши — зум<br>
-        • Двойной клик — добавить маркер (с URL и шрифтом)<br>
-        • ПКМ по маркеру — удалить<br>
+        • Двойной клик — добавить маркер<br>
+        • ПКМ по маркеру — удалить (на ПК)<br>
         • 📌 Запомнить вид — сохранить текущий поворот в браузере<br>
         • ↺ Сбросить вид — вернуться в центр<br>
         • 💾 Сохранить — записать маркеры в localStorage<br>
         • 📥 Экспорт JSON — сохраняет маркеры + текущий вид в файл<br>
-        • 📤 Импорт JSON — загружает маркеры и (если есть) вид из файла
+        • 📤 Импорт JSON — загружает маркеры и (если есть) вид из файла<br>
+        <strong>На телефоне:</strong> вращение одним пальцем, зум двумя.
     </div>
     
     <div id="controls" class="hidden">
@@ -219,17 +344,26 @@
         <button onclick="clearMarkers()" class="delete">🗑️ Очистить все</button>
         <button onclick="exportMarkers()">📥 Экспорт JSON</button>
         <button onclick="importMarkers()">📤 Импорт JSON</button>
-        <!-- Кнопки для работы с видом -->
         <button onclick="saveCurrentView()" class="secondary" title="Сохранить текущий вид в localStorage">📌 Запомнить вид</button>
         <button onclick="resetView()" class="secondary" title="Вернуться в центр">↺ Сбросить вид</button>
-        <!-- Скрытые кнопки экспорта/импорта вида (оставлены в коде, но не отображаются) -->
         <button onclick="exportView()" class="secondary hidden" title="Экспорт вида в файл">📤 Экспорт вида</button>
         <button onclick="importView()" class="secondary hidden" title="Импорт вида из файла">📥 Импорт вида</button>
     </div>
 
-    <!-- Диалог настроек шрифта и гиперссылки -->
-    <div id="font-dialog" class="hidden">
-        <h3>Настройки метки</h3>
+    <!-- Кнопка показа/скрытия интерфейса (видна только на ПК) -->
+    <button id="toggle-ui-btn" title="Показать/скрыть управление">⚙️</button>
+
+    <!-- Диалог создания маркера -->
+    <div id="marker-dialog" class="hidden">
+        <h3>Добавить маркер</h3>
+        <div class="dialog-row">
+            <label>Текст (можно с переносами строк):</label>
+            <textarea id="dialog-text" rows="3" placeholder="Введите текст маркера..."></textarea>
+        </div>
+        <div class="dialog-row">
+            <label>Цвет флажка:</label>
+            <input type="color" id="dialog-color" value="#ffffff">
+        </div>
         <div class="dialog-row">
             <label>Размер шрифта:</label>
             <input type="range" id="dialog-font-size" min="10" max="24" value="14" step="1">
@@ -261,8 +395,8 @@
             <input type="url" id="dialog-url" placeholder="https://example.com">
         </div>
         <div class="dialog-buttons">
-            <button onclick="cancelFontDialog()" class="delete">Отмена</button>
-            <button onclick="applyFontSettings()">Применить</button>
+            <button onclick="cancelMarkerDialog()" class="delete">Отмена</button>
+            <button onclick="applyMarkerDialog()">Добавить</button>
         </div>
     </div>
 
@@ -317,9 +451,21 @@
         let zoomVelocity = 0;
         let zoomFriction = 0.8;
         
-        let fontDialogCallback = null;
+        // Для диалога маркера
         let pendingMarkerCoords = null;
-        let pendingMarkerText = '';
+
+        // ---- Переменные для touch-управления ----
+        let touchStartPositions = [];
+        let touchStartDistance = 0;
+        let isTouchActive = false;
+        let lastTouchPosition = { x: 0, y: 0 };
+        let touchVelocity = { x: 0, y: 0 };
+        let touchZoomStartFov = fov;
+
+        // ========== ФУНКЦИЯ ОПРЕДЕЛЕНИЯ МОБИЛЬНОСТИ ==========
+        function isMobile() {
+            return window.innerWidth <= 768;
+        }
 
         // ========== ИНИЦИАЛИЗАЦИЯ THREE.JS ==========
         function initThreeJS() {
@@ -327,6 +473,7 @@
             
             camera = new THREE.PerspectiveCamera(fov, window.innerWidth / window.innerHeight, 0.1, 3000);
             camera.position.set(0, 0, 0);
+            camera.lookAt(0, 0, 0);
             
             renderer = new THREE.WebGLRenderer({ 
                 antialias: true,
@@ -381,8 +528,6 @@
                     scene.add(sphere);
                     
                     document.getElementById('upload-panel').classList.add('hidden');
-                    document.getElementById('info').classList.remove('hidden');
-                    document.getElementById('controls').classList.remove('hidden');
                     showPanoramaTitle();
                     resolve(texture);
                 };
@@ -412,8 +557,6 @@
                         scene.add(sphere);
                         
                         document.getElementById('upload-panel').classList.add('hidden');
-                        document.getElementById('info').classList.remove('hidden');
-                        document.getElementById('controls').classList.remove('hidden');
                         showPanoramaTitle();
                         resolve(texture);
                     };
@@ -425,8 +568,66 @@
             });
         }
 
-        // ========== УПРАВЛЕНИЕ КАМЕРОЙ ==========
+        // ========== ОБРАБОТЧИКИ TOUCH (ДЛЯ МОБИЛЬНЫХ) ==========
+        function handleTouchStart(e) {
+            e.preventDefault();
+            const touches = e.touches;
+            if (touches.length === 1) {
+                isTouchActive = true;
+                isInertia = false;
+                lastTouchPosition = { x: touches[0].clientX, y: touches[0].clientY };
+                touchVelocity = { x: 0, y: 0 };
+            } else if (touches.length === 2) {
+                const dx = touches[0].clientX - touches[1].clientX;
+                const dy = touches[0].clientY - touches[1].clientY;
+                touchStartDistance = Math.sqrt(dx * dx + dy * dy);
+                touchZoomStartFov = fov;
+                isTouchActive = true;
+            }
+        }
+
+        function handleTouchMove(e) {
+            e.preventDefault();
+            const touches = e.touches;
+            if (touches.length === 1 && isTouchActive) {
+                const currentPos = { x: touches[0].clientX, y: touches[0].clientY };
+                const deltaX = currentPos.x - lastTouchPosition.x;
+                const deltaY = currentPos.y - lastTouchPosition.y;
+                touchVelocity.x = deltaX * rotationSpeed * 0.5;
+                touchVelocity.y = deltaY * rotationSpeed * 0.5;
+                sphereRotation.y += deltaX * rotationSpeed;
+                sphereRotation.x += deltaY * rotationSpeed;
+                sphereRotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, sphereRotation.x));
+                if (sphere) {
+                    sphere.rotation.y = sphereRotation.y;
+                    sphere.rotation.x = sphereRotation.x;
+                }
+                lastTouchPosition = currentPos;
+            } else if (touches.length === 2 && isTouchActive) {
+                const dx = touches[0].clientX - touches[1].clientX;
+                const dy = touches[0].clientY - touches[1].clientY;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                const scale = distance / touchStartDistance;
+                targetFov = Math.max(minFov, Math.min(maxFov, touchZoomStartFov / scale));
+                zoomVelocity = (targetFov - fov) * 0.3;
+            }
+        }
+
+        function handleTouchEnd(e) {
+            e.preventDefault();
+            if (e.touches.length === 0) {
+                isTouchActive = false;
+                isInertia = true;
+                velocity.x = touchVelocity.x;
+                velocity.y = touchVelocity.y;
+            } else if (e.touches.length === 1) {
+                lastTouchPosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+            }
+        }
+
+        // ========== УПРАВЛЕНИЕ КАМЕРОЙ (МЫШЬ + TOUCH) ==========
         function initControls() {
+            // Мышиные события
             renderer.domElement.addEventListener('mousedown', (e) => {
                 if (e.button === 0) {
                     isDragging = true;
@@ -464,6 +665,12 @@
                 else targetFov = Math.min(maxFov, fov + zoomStep);
                 zoomVelocity = (targetFov - fov) * 0.3;
             });
+
+            // Touch события
+            renderer.domElement.addEventListener('touchstart', handleTouchStart, { passive: false });
+            renderer.domElement.addEventListener('touchmove', handleTouchMove, { passive: false });
+            renderer.domElement.addEventListener('touchend', handleTouchEnd);
+            renderer.domElement.addEventListener('touchcancel', handleTouchEnd);
         }
 
         // ========== ФУНКЦИИ ДЛЯ РАБОТЫ С ВИДОМ ==========
@@ -501,7 +708,6 @@
             console.log('Вид сброшен в центр');
         }
 
-        // ========== ЭКСПОРТ / ИМПОРТ ВИДА В ФАЙЛ (скрытый функционал) ==========
         function exportView() {
             if (!sphere) { alert('Панорама не загружена'); return; }
             const viewData = { x: sphereRotation.x, y: sphereRotation.y };
@@ -552,57 +758,88 @@
         // ========== МАРКЕРЫ ==========
         function addMarker(coords, label = 'Новый маркер', id = Date.now().toString(), 
                           fontSize = 14, fontFamily = 'Arial, sans-serif', 
-                          fontWeight = 'normal', fontStyle = 'normal', url = '') {
-            let markerMesh = null;
-            if (CONFIG.showMarkerDots) {
-                const geometry = new THREE.SphereGeometry(CONFIG.markerSize, 16, 16);
-                const material = new THREE.MeshBasicMaterial({ color: CONFIG.markerColor, transparent: true, opacity: 0.7 });
-                markerMesh = new THREE.Mesh(geometry, material);
-                const vector = new THREE.Vector3();
-                vector.setFromSphericalCoords(CONFIG.sphereRadius, coords.phi, coords.theta);
-                markerMesh.position.copy(vector);
-                scene.add(markerMesh);
-            }
+                          fontWeight = 'normal', fontStyle = 'normal', url = '', color = '#ffffff') {
             
-            let labelElement;
+            // Контейнер маркера
+            let container = document.createElement('div');
+            container.className = 'marker-container';
+            container.dataset.markerId = id;
+            container.style.setProperty('--marker-color', color);
+            
+            // Прямоугольник с текстом
+            let rect;
             if (url && url.trim() !== '') {
-                labelElement = document.createElement('a');
-                labelElement.href = url;
-                labelElement.target = '_blank';
-                labelElement.rel = 'noopener noreferrer';
+                rect = document.createElement('a');
+                rect.href = url;
+                rect.target = '_blank';
+                rect.rel = 'noopener noreferrer';
             } else {
-                labelElement = document.createElement('div');
+                rect = document.createElement('div');
             }
-            labelElement.className = 'marker-label';
-            labelElement.textContent = label;
-            labelElement.dataset.markerId = id;
-            labelElement.style.fontSize = fontSize + 'px';
-            labelElement.style.fontFamily = fontFamily;
-            labelElement.style.fontWeight = fontWeight;
-            labelElement.style.fontStyle = fontStyle;
+            rect.className = 'marker-rect';
+            rect.textContent = label;
+            rect.style.fontSize = fontSize + 'px';
+            rect.style.fontFamily = fontFamily;
+            rect.style.fontWeight = fontWeight;
+            rect.style.fontStyle = fontStyle;
             
-            labelElement.addEventListener('contextmenu', function(e) {
-                e.preventDefault(); e.stopPropagation();
-                if (confirm('Удалить этот маркер?')) { removeMarker(id); saveMarkers(); }
+            // Древко
+            let pole = document.createElement('div');
+            pole.className = 'marker-pole';
+            
+            // Точка
+            let dot = document.createElement('div');
+            dot.className = 'marker-dot';
+            
+            container.appendChild(rect);
+            container.appendChild(pole);
+            container.appendChild(dot);
+            
+            // Функция удаления
+            const deleteCallback = () => {
+                if (confirm('Удалить этот маркер?')) {
+                    removeMarker(id);
+                    saveMarkers();
+                }
+            };
+
+            // Обработчики мыши (ПКМ) – на мобильных не удаляем
+            const contextMenuHandler = function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (!isMobile()) {
+                    deleteCallback();
+                }
                 return false;
+            };
+
+            container.addEventListener('contextmenu', contextMenuHandler);
+            rect.addEventListener('contextmenu', contextMenuHandler);
+
+            // Наведение (мышь)
+            container.addEventListener('mouseenter', function() {
+                container.style.opacity = '1';
             });
-            labelElement.addEventListener('mouseenter', function() {
-                this.style.background = 'white'; this.style.opacity = '1';
-                const marker = markers.find(m => m.id === id);
-                if (marker && marker.mesh && marker.mesh.material) marker.mesh.material.opacity = 1;
+            container.addEventListener('mouseleave', function() {
+                container.style.opacity = '0.7';
             });
-            labelElement.addEventListener('mouseleave', function() {
-                this.style.background = 'white'; this.style.opacity = '0.7';
-                const marker = markers.find(m => m.id === id);
-                if (marker && marker.mesh && marker.mesh.material) marker.mesh.material.opacity = 0.7;
-            });
-            markerContainer.appendChild(labelElement);
             
-            markers.push({
-                id, mesh: markerMesh, label: labelElement, coords, text: label,
-                fontSize, fontFamily, fontWeight, fontStyle, url,
+            markerContainer.appendChild(container);
+            
+            // Создаем объект маркера
+            const marker = {
+                id, 
+                container: container,
+                rect: rect,
+                pole: pole,
+                coords, 
+                text: label,
+                fontSize, fontFamily, fontWeight, fontStyle, url, color,
                 date: new Date().toISOString()
-            });
+            };
+            
+            markers.push(marker);
+            
             updateMarkerCount();
             updateMarkerLabels();
             return id;
@@ -611,8 +848,9 @@
         function removeMarker(id) {
             const index = markers.findIndex(m => m.id === id);
             if (index !== -1) {
-                if (markers[index].mesh) { scene.remove(markers[index].mesh); markers[index].mesh.geometry.dispose(); markers[index].mesh.material.dispose(); }
-                if (markers[index].label.parentNode) markerContainer.removeChild(markers[index].label);
+                if (markers[index].container.parentNode) {
+                    markerContainer.removeChild(markers[index].container);
+                }
                 markers.splice(index, 1);
                 updateMarkerCount();
                 return true;
@@ -646,18 +884,21 @@
             markers.forEach(marker => {
                 const position = new THREE.Vector3();
                 position.setFromSphericalCoords(CONFIG.sphereRadius, marker.coords.phi, marker.coords.theta);
-                if (marker.mesh) marker.mesh.position.copy(position);
                 const quaternion = new THREE.Quaternion();
-                quaternion.setFromEuler(new THREE.Euler(sphereRotation.x, sphereRotation.y, 0));
+                quaternion.setFromEuler(sphere.rotation);
                 const rotatedPosition = position.clone().applyQuaternion(quaternion);
                 const vector = rotatedPosition.clone().project(camera);
+                
                 if (vector.z < 1) {
                     const x = (vector.x * 0.5 + 0.5) * window.innerWidth;
                     const y = (-vector.y * 0.5 + 0.5) * window.innerHeight;
-                    marker.label.style.display = 'block';
-                    marker.label.style.left = `${x}px`;
-                    marker.label.style.top = `${y}px`;
-                } else marker.label.style.display = 'none';
+                    
+                    marker.container.style.display = 'block';
+                    marker.container.style.left = `${x}px`;
+                    marker.container.style.top = `${y}px`;
+                } else {
+                    marker.container.style.display = 'none';
+                }
             });
         }
 
@@ -665,26 +906,36 @@
             document.getElementById('marker-count').textContent = markers.length;
         }
 
-        // ========== ДИАЛОГ НАСТРОЕК ==========
-        function showFontDialog(text, callback, currentUrl = '') {
-            pendingMarkerText = text;
-            fontDialogCallback = callback;
-            document.getElementById('font-dialog').classList.remove('hidden');
+        // ========== ДИАЛОГ СОЗДАНИЯ МАРКЕРА ==========
+        function showMarkerDialog(initialText = '', initialColor = '#ffffff') {
+            document.getElementById('dialog-text').value = initialText;
+            document.getElementById('dialog-color').value = initialColor;
+            
             const fontSizeSlider = document.getElementById('dialog-font-size');
             const fontSizeValue = document.getElementById('dialog-font-size-value');
             fontSizeSlider.value = '14';
             fontSizeValue.textContent = '14px';
             fontSizeSlider.oninput = (e) => fontSizeValue.textContent = e.target.value + 'px';
-            document.getElementById('dialog-url').value = currentUrl;
+            
+            document.getElementById('dialog-url').value = '';
+            document.getElementById('dialog-font-bold').checked = false;
+            document.getElementById('dialog-font-italic').checked = false;
+            
+            document.getElementById('marker-dialog').classList.remove('hidden');
         }
 
-        function cancelFontDialog() {
-            document.getElementById('font-dialog').classList.add('hidden');
-            fontDialogCallback = null;
-            pendingMarkerText = '';
+        function cancelMarkerDialog() {
+            document.getElementById('marker-dialog').classList.add('hidden');
+            pendingMarkerCoords = null;
         }
 
-        function applyFontSettings() {
+        function applyMarkerDialog() {
+            const text = document.getElementById('dialog-text').value.trim();
+            if (!text) {
+                alert('Введите текст маркера');
+                return;
+            }
+            const color = document.getElementById('dialog-color').value;
             const fontSize = document.getElementById('dialog-font-size').value;
             const fontFamily = document.getElementById('dialog-font-family').value;
             const isBold = document.getElementById('dialog-font-bold').checked;
@@ -692,107 +943,105 @@
             const url = document.getElementById('dialog-url').value.trim();
             const fontWeight = isBold ? 'bold' : 'normal';
             const fontStyle = isItalic ? 'italic' : 'normal';
-            document.getElementById('font-dialog').classList.add('hidden');
-            if (fontDialogCallback) {
-                fontDialogCallback(fontSize, fontFamily, fontWeight, fontStyle, url);
-                fontDialogCallback = null;
+            
+            document.getElementById('marker-dialog').classList.add('hidden');
+            
+            if (pendingMarkerCoords) {
+                addMarker(pendingMarkerCoords, text, undefined, 
+                         parseInt(fontSize), fontFamily, fontWeight, fontStyle, url, color);
+                saveMarkers();
+                pendingMarkerCoords = null;
             }
-            pendingMarkerText = '';
         }
 
-        // ========== СОХРАНЕНИЕ / ЗАГРУЗКА МАРКЕРОВ (localStorage) ==========
+        // ========== СОХРАНЕНИЕ / ЗАГРУЗКА МАРКЕРОВ ==========
         function saveMarkers() {
             const markersData = markers.map(m => ({
                 id: m.id, theta: m.coords.theta, phi: m.coords.phi, text: m.text,
                 fontSize: m.fontSize, fontFamily: m.fontFamily, fontWeight: m.fontWeight, fontStyle: m.fontStyle,
-                url: m.url || '', date: m.date
+                url: m.url || '', color: m.color || '#ffffff', date: m.date
             }));
             localStorage.setItem(CONFIG.storageKey, JSON.stringify(markersData));
             alert(`Сохранено ${markers.length} маркеров в localStorage`);
         }
 
-function loadMarkers() {
-  // Пытаемся загрузить markers.json
-  fetch(CONFIG.markersFile)
-    .then(response => {
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      return response.json();
-    })
-    .then(data => {
-      // Если в файле есть объект с маркерами и/или видом
-      let markersData = [];
-      let viewData = null;
+        function loadMarkers() {
+            fetch(CONFIG.markersFile)
+                .then(response => {
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    return response.json();
+                })
+                .then(data => {
+                    let markersData = [];
+                    let viewData = null;
 
-      if (Array.isArray(data)) {
-        // Простой массив маркеров
-        markersData = data;
-      } else if (data && typeof data === 'object') {
-        // Расширенный формат: { markers: [...], view: {...} }
-        if (Array.isArray(data.markers)) markersData = data.markers;
-        if (data.view && typeof data.view.x === 'number' && typeof data.view.y === 'number') {
-          viewData = data.view;
+                    if (Array.isArray(data)) {
+                        markersData = data;
+                    } else if (data && typeof data === 'object') {
+                        if (Array.isArray(data.markers)) markersData = data.markers;
+                        if (data.view && typeof data.view.x === 'number' && typeof data.view.y === 'number') {
+                            viewData = data.view;
+                        }
+                    }
+
+                    // Удаляем старые маркеры
+                    markers.forEach(m => {
+                        if (m.container.parentNode) markerContainer.removeChild(m.container);
+                    });
+                    markers = [];
+
+                    // Добавляем новые
+                    markersData.forEach(markerData => {
+                        addMarker(
+                            { theta: markerData.theta, phi: markerData.phi },
+                            markerData.text,
+                            markerData.id,
+                            markerData.fontSize || 14,
+                            markerData.fontFamily || 'Arial, sans-serif',
+                            markerData.fontWeight || 'normal',
+                            markerData.fontStyle || 'normal',
+                            markerData.url || '',
+                            markerData.color || '#ffffff'
+                        );
+                    });
+
+                    if (viewData) {
+                        sphereRotation.x = viewData.x;
+                        sphereRotation.y = viewData.y;
+                        sphereRotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, sphereRotation.x));
+                        if (sphere) {
+                            sphere.rotation.y = sphereRotation.y;
+                            sphere.rotation.x = sphereRotation.x;
+                        }
+                        localStorage.setItem(CONFIG.viewStorageKey, JSON.stringify(viewData));
+                        console.log('Восстановлен вид из markers.json');
+                    }
+
+                    updateMarkerCount();
+                    console.log(`Загружено ${markers.length} маркеров из ${CONFIG.markersFile}`);
+                })
+                .catch(error => {
+                    console.error('Не удалось загрузить markers.json:', error);
+                    alert('Не удалось загрузить маркеры из файла. Проверьте наличие markers.json в корне репозитория.');
+                });
         }
-      }
-
-      // Удаляем старые маркеры (если есть)
-      markers.forEach(m => {
-        if (m.mesh) scene.remove(m.mesh);
-        if (m.label.parentNode) markerContainer.removeChild(m.label);
-      });
-      markers = [];
-
-      // Добавляем новые маркеры из файла
-      markersData.forEach(markerData => {
-        addMarker(
-          { theta: markerData.theta, phi: markerData.phi },
-          markerData.text,
-          markerData.id,
-          markerData.fontSize || 14,
-          markerData.fontFamily || 'Arial, sans-serif',
-          markerData.fontWeight || 'normal',
-          markerData.fontStyle || 'normal',
-          markerData.url || ''
-        );
-      });
-
-      // Если в файле был view – применяем его и сохраняем в localStorage как начальный
-      if (viewData) {
-        sphereRotation.x = viewData.x;
-        sphereRotation.y = viewData.y;
-        sphereRotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, sphereRotation.x));
-        if (sphere) {
-          sphere.rotation.y = sphereRotation.y;
-          sphere.rotation.x = sphereRotation.x;
-        }
-        localStorage.setItem(CONFIG.viewStorageKey, JSON.stringify(viewData));
-        console.log('Восстановлен вид из markers.json');
-      }
-
-      updateMarkerCount();
-      console.log(`Загружено ${markers.length} маркеров из ${CONFIG.markersFile}`);
-    })
-    .catch(error => {
-      console.error('Не удалось загрузить markers.json:', error);
-      // Здесь можно показать всплывающее сообщение, но не загружаем из localStorage
-      alert('Не удалось загрузить маркеры из файла. Проверьте наличие markers.json в корне репозитория.');
-    });
-}
 
         function clearMarkers() {
             if (confirm('Удалить все маркеры?')) {
-                markers.forEach(m => { if (m.mesh) scene.remove(m.mesh); if (m.label.parentNode) markerContainer.removeChild(m.label); });
+                markers.forEach(m => {
+                    if (m.container.parentNode) markerContainer.removeChild(m.container);
+                });
                 markers = [];
                 localStorage.removeItem(CONFIG.storageKey);
                 updateMarkerCount();
             }
         }
 
-        // ========== ЭКСПОРТ / ИМПОРТ JSON (МАРКЕРЫ + ВИД) ==========
         function exportMarkers() {
             const markersData = markers.map(m => ({
                 id: m.id, theta: m.coords.theta, phi: m.coords.phi, text: m.text,
                 fontSize: m.fontSize, fontFamily: m.fontFamily, fontWeight: m.fontWeight, fontStyle: m.fontStyle,
-                url: m.url || '', date: m.date
+                url: m.url || '', color: m.color || '#ffffff', date: m.date
             }));
             const exportObj = {
                 markers: markersData,
@@ -833,7 +1082,9 @@ function loadMarkers() {
                             }
                         }
                         
-                        markers.forEach(m => { if (m.mesh) scene.remove(m.mesh); if (m.label.parentNode) markerContainer.removeChild(m.label); });
+                        markers.forEach(m => {
+                            if (m.container.parentNode) markerContainer.removeChild(m.container);
+                        });
                         markers = [];
                         
                         markersData.forEach(markerData => {
@@ -845,7 +1096,8 @@ function loadMarkers() {
                                 markerData.fontFamily || 'Arial, sans-serif',
                                 markerData.fontWeight || 'normal',
                                 markerData.fontStyle || 'normal',
-                                markerData.url || ''
+                                markerData.url || '',
+                                markerData.color || '#ffffff'
                             );
                         });
                         
@@ -880,17 +1132,17 @@ function loadMarkers() {
                 if (!sphere) { alert('Сначала загрузите панораму!'); return; }
                 const coords = getSphericalCoords(event);
                 if (coords) {
-                    const label = prompt('Введите подпись для маркера:', 'Новый маркер');
-                    if (label && label.trim() !== '') {
-                        pendingMarkerCoords = coords;
-                        showFontDialog(label, (fontSize, fontFamily, fontWeight, fontStyle, url) => {
-                            addMarker(pendingMarkerCoords, label, undefined, 
-                                     parseInt(fontSize), fontFamily, fontWeight, fontStyle, url);
-                            saveMarkers();
-                            pendingMarkerCoords = null;
-                        }, '');
-                    }
+                    pendingMarkerCoords = coords;
+                    showMarkerDialog('', '#ffffff');
                 }
+            });
+            window.addEventListener('orientationchange', function() {
+                setTimeout(function() {
+                    camera.aspect = window.innerWidth / window.innerHeight;
+                    camera.updateProjectionMatrix();
+                    renderer.setSize(window.innerWidth, window.innerHeight);
+                    updateMarkerLabels();
+                }, 200);
             });
             renderer.domElement.addEventListener('contextmenu', (e) => e.preventDefault());
             document.getElementById('file-input').addEventListener('change', async function(e) {
@@ -908,6 +1160,14 @@ function loadMarkers() {
                     document.getElementById('manual-upload').classList.remove('hidden');
                 }
             });
+
+            // Кнопка показа/скрытия интерфейса
+            document.getElementById('toggle-ui-btn').addEventListener('click', function() {
+                const info = document.getElementById('info');
+                const controls = document.getElementById('controls');
+                info.classList.toggle('hidden');
+                controls.classList.toggle('hidden');
+            });
         }
 
         // ========== АНИМАЦИЯ ==========
@@ -919,7 +1179,7 @@ function loadMarkers() {
         }
 
         function updatePhysics() {
-            if (isInertia && !isDragging) {
+            if (isInertia && !isDragging && !isTouchActive) {
                 sphereRotation.y += velocity.x;
                 sphereRotation.x += velocity.y;
                 sphereRotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, sphereRotation.x));
@@ -942,6 +1202,8 @@ function loadMarkers() {
                 camera.aspect = window.innerWidth / window.innerHeight;
                 camera.updateProjectionMatrix();
                 renderer.setSize(window.innerWidth, window.innerHeight);
+                updateMarkerLabels();
+                renderer.render(scene, camera);
             });
             try {
                 await tryLoadPanorama();
@@ -955,8 +1217,8 @@ function loadMarkers() {
             window.clearMarkers = clearMarkers;
             window.exportMarkers = exportMarkers;
             window.importMarkers = importMarkers;
-            window.cancelFontDialog = cancelFontDialog;
-            window.applyFontSettings = applyFontSettings;
+            window.cancelMarkerDialog = cancelMarkerDialog;
+            window.applyMarkerDialog = applyMarkerDialog;
             window.saveCurrentView = saveCurrentView;
             window.resetView = resetView;
             window.exportView = exportView;
