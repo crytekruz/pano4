@@ -1,71 +1,73 @@
 {
   "markers": [
     {
-      "id": "1770894197503",
-      "theta": 1.3447506721430236,
-      "phi": 1.9764045029296096,
-      "text": "Ресторан\n \"У водохранилища\"",
+      "id": "1771748543495",
+      "theta": 2.1744704688525456,
+      "phi": 1.8503531627889067,
+      "text": "Ресторан\n\"У водохранилища\"",
       "fontSize": 12,
       "fontFamily": "Arial, sans-serif",
       "fontWeight": "normal",
       "fontStyle": "normal",
       "url": "",
-      "date": "2026-02-12T11:05:42.290Z"
+      "color": "#ffffff",
+      "date": "2026-02-22T08:22:23.495Z"
     },
     {
-      "id": "1770894212287",
-      "theta": -1.0690437263836292,
-      "phi": 1.906174837232689,
+      "id": "1771748573944",
+      "theta": 2.209206028528275,
+      "phi": 1.7695698967885045,
+      "text": "Террасный\nпарк",
+      "fontSize": 14,
+      "fontFamily": "Arial, sans-serif",
+      "fontWeight": "bold",
+      "fontStyle": "normal",
+      "url": "https://crytekruz.github.io/pano4/",
+      "color": "#ffda99",
+      "date": "2026-02-22T08:22:53.944Z"
+    },
+    {
+      "id": "1771748605538",
+      "theta": 0.8212806336588758,
+      "phi": 1.8374761336092267,
       "text": "Спортивная\nплощадка",
       "fontSize": 12,
       "fontFamily": "Arial, sans-serif",
       "fontWeight": "normal",
       "fontStyle": "normal",
       "url": "",
-      "date": "2026-02-12T11:05:42.290Z"
+      "color": "#ffffff",
+      "date": "2026-02-22T08:23:25.538Z"
     },
     {
-      "id": "1770894242538",
-      "theta": 1.0334186010874729,
-      "phi": 1.810425020423498,
-      "text": "Террасный\nпарк",
-      "fontSize": 14,
-      "fontFamily": "Arial, sans-serif",
-      "fontWeight": "bold",
-      "fontStyle": "normal",
-      "url": "https://crytekruz.github.io/pano3",
-      "color": "#ffda99",
-      "date": "2026-02-12T11:05:42.290Z"
-    },
-    {
-      "id": "1770894255818",
-      "theta": 0.00459896221032561,
-      "phi": 1.6303760831180096,
+      "id": "1771748633708",
+      "theta": 1.4227126500354477,
+      "phi": 1.6445403604062072,
       "text": "Лесопарк",
       "fontSize": 14,
       "fontFamily": "Arial, sans-serif",
       "fontWeight": "bold",
       "fontStyle": "normal",
-      "url": "https://crytekruz.github.io/pano5",
+      "url": "https://crytekruz.github.io/pano5/",
       "color": "#ffda99",
-      "date": "2026-02-12T11:05:42.290Z"
+      "date": "2026-02-22T08:23:53.708Z"
     },
     {
-      "id": "1770894269907",
-      "theta": 0.46466357382524215,
-      "phi": 1.6386383075693438,
+      "id": "1771748650808",
+      "theta": 1.82149876246804,
+      "phi": 1.6428182093413513,
       "text": "Общественно-деловой\nцентр",
       "fontSize": 14,
       "fontFamily": "Arial, sans-serif",
       "fontWeight": "bold",
       "fontStyle": "normal",
-      "url": "https://crytekruz.github.io/pano2",
+      "url": "https://crytekruz.github.io/pano2/",
       "color": "#ffda99",
-      "date": "2026-02-12T11:05:42.290Z"
+      "date": "2026-02-22T08:24:10.808Z"
     }
   ],
   "view": {
-    "x": 0.9142686828035496,
-    "y": 12.631095219632416
+    "x": 0.7670749275782102,
+    "y": 7.809492843333145
   }
 }
