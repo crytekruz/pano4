@@ -1,19 +1,6 @@
 {
   "markers": [
     {
-      "id": "1771748543495",
-      "theta": 2.1744704688525456,
-      "phi": 1.8503531627889067,
-      "text": "Ресторан\n\"У водохранилища\"",
-      "fontSize": 12,
-      "fontFamily": "Arial, sans-serif",
-      "fontWeight": "normal",
-      "fontStyle": "normal",
-      "url": "",
-      "color": "#ffffff",
-      "date": "2026-02-22T08:22:23.495Z"
-    },
-    {
       "id": "1771748573944",
       "theta": 2.209206028528275,
       "phi": 1.7695698967885045,
@@ -24,20 +11,7 @@
       "fontStyle": "normal",
       "url": "https://crytekruz.github.io/pano3/",
       "color": "#ffda99",
-      "date": "2026-02-22T08:22:53.944Z"
-    },
-    {
-      "id": "1771748605538",
-      "theta": 0.8212806336588758,
-      "phi": 1.8374761336092267,
-      "text": "Спортивная\nплощадка",
-      "fontSize": 12,
-      "fontFamily": "Arial, sans-serif",
-      "fontWeight": "normal",
-      "fontStyle": "normal",
-      "url": "",
-      "color": "#ffffff",
-      "date": "2026-02-22T08:23:25.538Z"
+      "date": "2026-02-25T09:57:50.222Z"
     },
     {
       "id": "1771748633708",
@@ -50,7 +24,7 @@
       "fontStyle": "normal",
       "url": "https://crytekruz.github.io/pano5/",
       "color": "#ffda99",
-      "date": "2026-02-22T08:23:53.708Z"
+      "date": "2026-02-25T09:57:50.222Z"
     },
     {
       "id": "1771748650808",
@@ -63,7 +37,98 @@
       "fontStyle": "normal",
       "url": "https://crytekruz.github.io/pano2/",
       "color": "#ffda99",
-      "date": "2026-02-22T08:24:10.808Z"
+      "date": "2026-02-25T09:57:50.223Z"
+    },
+    {
+      "id": "1772013492604",
+      "theta": 2.4882159414508163,
+      "phi": 2.1924033558040863,
+      "text": "Пирс",
+      "fontSize": 12,
+      "fontFamily": "Arial, sans-serif",
+      "fontWeight": "normal",
+      "fontStyle": "normal",
+      "url": "",
+      "color": "#ffffff",
+      "date": "2026-02-25T09:58:12.605Z"
+    },
+    {
+      "id": "1772013505583",
+      "theta": 2.1750800250926954,
+      "phi": 1.8806880641966326,
+      "text": "Ресторан\n\"У водохранилища\"",
+      "fontSize": 12,
+      "fontFamily": "Arial, sans-serif",
+      "fontWeight": "normal",
+      "fontStyle": "normal",
+      "url": "",
+      "color": "#ffffff",
+      "date": "2026-02-25T09:58:25.584Z"
+    },
+    {
+      "id": "1772013516922",
+      "theta": 0.8386088572128733,
+      "phi": 1.8578110868729485,
+      "text": "Спортивная\nплощадка",
+      "fontSize": 12,
+      "fontFamily": "Arial, sans-serif",
+      "fontWeight": "normal",
+      "fontStyle": "normal",
+      "url": "",
+      "color": "#ffffff",
+      "date": "2026-02-25T09:58:36.922Z"
+    },
+    {
+      "id": "1772013534135",
+      "theta": 1.5266550943239134,
+      "phi": 1.8971273752331634,
+      "text": "ИЖС",
+      "fontSize": 12,
+      "fontFamily": "Arial, sans-serif",
+      "fontWeight": "normal",
+      "fontStyle": "normal",
+      "url": "",
+      "color": "#ffda99",
+      "date": "2026-02-25T09:58:54.135Z"
+    },
+    {
+      "id": "1772013548530",
+      "theta": 2.2746065318951465,
+      "phi": 1.740701270065165,
+      "text": "МКД",
+      "fontSize": 12,
+      "fontFamily": "Arial, sans-serif",
+      "fontWeight": "normal",
+      "fontStyle": "normal",
+      "url": "",
+      "color": "#ffda99",
+      "date": "2026-02-25T09:59:08.530Z"
+    },
+    {
+      "id": "1772013567279",
+      "theta": 1.9701725647173691,
+      "phi": 1.7226835571632164,
+      "text": "\"Сад-делянка\"",
+      "fontSize": 12,
+      "fontFamily": "Arial, sans-serif",
+      "fontWeight": "normal",
+      "fontStyle": "normal",
+      "url": "",
+      "color": "#ffffff",
+      "date": "2026-02-25T09:59:27.279Z"
+    },
+    {
+      "id": "1772013581622",
+      "theta": 2.384387862511998,
+      "phi": 1.739693435416244,
+      "text": "Детский сад\n55 мест",
+      "fontSize": 12,
+      "fontFamily": "Arial, sans-serif",
+      "fontWeight": "normal",
+      "fontStyle": "normal",
+      "url": "",
+      "color": "#ffffff",
+      "date": "2026-02-25T09:59:41.622Z"
     }
   ],
   "view": {
